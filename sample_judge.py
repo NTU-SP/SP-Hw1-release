@@ -28,7 +28,7 @@ class TelnetClient(telnetlib.Telnet):
             if msg == expected:
                 print(f"{self.server_type} {self.server_idx} send to client {self.client_idx}: " + msg)
             elif expected is not None:
-                print(f"Client {self.client_idx} expects \"{expected}\", but received \"{msg}\" from {self.server_type.lower()} {self.server_idx}")
+                print(f"\33[31mClient {self.client_idx} expects \"{expected}\", but received \"{msg}\" from {self.server_type.lower()} {self.server_idx}\33[0m")
         return msg == expected if expected is not None else True
     
     def check_EOF(self) -> bool:
@@ -169,21 +169,23 @@ class Scorer:
         self.execute_and_check_ret(["cp", "bookingRecord.backup", "bookingRecord"])
         self.record = copy.deepcopy(self.record_backup)
 
+    def file_exists(self, path: str) -> bool:
+        try:
+            with open(path, "rb") as f:
+                pass
+        except OSError:
+            return False
+        else:
+            return True
+
     def init_test(self) -> None:
         print(self.bold("Initializing for tests..."))
 
         print("Checking existence of read_server and write_server...")
-        ret, _, _ = self.execute(["stat", "read_server"])
-        if not ret:
+        if self.file_exists("./read_server") or self.file_exists("./write_server"):
             self.punishment += 1
             print(self.red("Find read_server/write_server, lose 1 point.\nRemoving read_server and write_server..."))
             self.execute_and_check_ret(["rm", "-f", "read_server", "write_server"])
-        else:
-            ret, _, _ = self.execute(["stat", "write_server"])
-            if not ret:
-                self.punishment += 1
-                print(self.red("Find read_server/write_server, lose 1 point.\nRemoving read_server and write_server..."))
-                self.execute_and_check_ret(["rm", "-f", "read_server", "write_server"])
 
         print("Copying bookingState...")
         self.execute_and_check_ret(["cp", "bookingRecord", "bookingRecord.backup"])
@@ -192,26 +194,21 @@ class Scorer:
         self.execute_and_check_ret(["touch", "read_server", "write_server"])
         ret, stdout, stderr = self.execute(["make", "clean"])
         if ret:
-            self.punishment += 1
-            print(self.red(f"Command \"make clean\" failed, lose 1 point.\nstdout: {stdout}\nstderr: {stderr}"))
+            self.punishment += 0.25
+            print(self.red(f"Command \"make clean\" failed, lose 0.25 point.\nstdout: {stdout}\nstderr: {stderr}"))
             self.execute_and_check_ret(["rm", "-f", "read_server", "write_server"])
-        else:
-            ret, _, _ = self.execute(["stat", "read_server"])
-            if not ret:
-                self.punishment += 1
-                print(self.red("Command \"make clean\" did not remove files correctly, lose 1 point."))
-                self.execute_and_check_ret(["rm", "-f", "read_server", "write_server"])
-            else:
-                ret, _, _ = self.execute(["stat", "write_server"])
-                if not ret:
-                    self.punishment += 1
-                    print(self.red("Command \"make clean\" did not remove files correctly, lose 1 point."))
-                    self.execute_and_check_ret(["rm", "-f", "read_server", "write_server"])
+        elif self.file_exists("./read_server") or self.file_exists("./write_server"):
+            self.punishment += 0.25
+            print(self.red("Command \"make clean\" did not remove files correctly, lose 0.25 point."))
+            self.execute_and_check_ret(["rm", "-f", "read_server", "write_server"])
 
         print("Compiling source code...")
         ret, stdout, stderr = self.execute(["make"])
         if ret:
-            print(self.bright_red(f"Make failed, 0 point.\nstdout: {stdout}\nstderr: {stderr}"))
+            print(self.bright_red(f"Make failed, 0 points.\nstdout: {stdout}\nstderr: {stderr}"))
+            exit(1)
+        elif not self.file_exists("./read_server") or not self.file_exists("./write_server"):
+            print(self.bright_red("Make did not generate read_server and write_server, 0 points."))
             exit(1)
         print(self.green("Init test done!"))
     
