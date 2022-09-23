@@ -13,7 +13,7 @@ import os
 
 
 class TelnetClient(telnetlib.Telnet):
-    def __init__(self, verbose: bool, cid: int = 0, sid: tuple[int, int] = (0, 0), *args, **kwargs):
+    def __init__(self, verbose, cid = 0, sid = (0, 0), *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.verbose = verbose
         self.client_idx = cid
@@ -22,7 +22,7 @@ class TelnetClient(telnetlib.Telnet):
         if self.verbose:
             print(f"Client {self.client_idx} connects to {self.server_type.lower()} {self.server_idx}")
 
-    def check_output(self, expected: str) -> bool:
+    def check_output(self, expected):
         msg = self.read_until(b"\n", timeout=0.2).decode().strip("\n")
         if self.verbose:
             if msg == expected:
@@ -31,7 +31,7 @@ class TelnetClient(telnetlib.Telnet):
                 print(f"\33[31mClient {self.client_idx} expects \"{expected}\", but received \"{msg}\" from {self.server_type.lower()} {self.server_idx}\33[0m")
         return msg == expected if expected is not None else True
     
-    def check_EOF(self) -> bool:
+    def check_EOF(self):
         try:
             self.read_until(b"\n", timeout=0.2)
         except EOFError:
@@ -39,7 +39,7 @@ class TelnetClient(telnetlib.Telnet):
         else:
             return False
 
-    def write(self, buffer: bytes) -> None:
+    def write(self, buffer):
         if self.verbose:
             print(f"Client {self.client_idx} send: " + buffer.decode().strip("\r\n"))
         super().write(buffer)
@@ -86,47 +86,47 @@ class Scorer:
         self.read_server = [None, None]
         self.write_server = [None, None]
 
-    def bold(self, str_: str) -> str:
+    def bold(self, str_):
         return "\33[1m" + str_ + "\33[0m"
 
-    def grey(self, str_: str) -> str:
+    def grey(self, str_):
         return "\33[2m" + str_ + "\33[0m"
 
-    def underscore(self, str_: str) -> str:
+    def underscore(self, str_):
         return "\33[4m" + str_ + "\33[0m"
 
-    def red(self, str_: str) -> str:
+    def red(self, str_):
         return "\33[31m" + str_ + "\33[0m"
 
-    def bright_red(self, str_: str) -> str:
+    def bright_red(self, str_):
         return "\33[1;31m" + str_ + "\33[0m"
 
-    def green(self, str_: str) -> str:
+    def green(self, str_):
         return "\33[32m" + str_ + "\33[0m"
     
-    def cyan(self, str_: str) -> str:
+    def cyan(self, str_):
         return "\33[36m" + str_ + "\33[0m"
     
-    def white(self, str_: str) -> str:
+    def white(self, str_):
         return "\33[37m" + str_ + "\33[0m"
 
-    def find_empty_port(self, start: int) -> int:
+    def find_empty_port(self, start):
         for i in range(start, 65536):
             if not self.check_port_in_use(i):
                 return i
 
-    def check_port_in_use(self, port: int) -> bool:
+    def check_port_in_use(self, port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("localhost", port)) == 0;
 
-    def start_server(self, server_type: str, port: int) -> subprocess.Popen:
+    def start_server(self, server_type, port):
         # server_type: either "read_server" or "write_server"
         server = subprocess.Popen([os.path.join(self.dir_, server_type), str(port)], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         # server = subprocess.Popen([os.path.join(self.dir_, server_type), str(port)])
         time.sleep(0.2)
         return server
     
-    def execute_and_check_ret(self, cmd: list[str], exit_on_fail=True) -> tuple[str, str]:
+    def execute_and_check_ret(self, cmd, exit_on_fail=True):
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         cmd_str = ' '.join(cmd)
         stdout, stderr = proc.communicate()
@@ -138,12 +138,12 @@ class Scorer:
                 exit(1)
         return stdout, stderr
 
-    def execute(self, cmd: list[str]) -> tuple[int, str, str]:
+    def execute(self, cmd):
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         stdout, stderr = proc.communicate()
         return proc.returncode, stdout, stderr
     
-    def read_record(self) -> dict[int, list[int]]:
+    def read_record(self):
         rec = {}
         with open("./bookingRecord", "rb") as f:
             content = f.read()
@@ -156,20 +156,20 @@ class Scorer:
                 rec[id_] = [food, concert, elecs]
         return rec
 
-    def print_record(self) -> None:
+    def print_record(self):
         for id_ in self.record:
             print(f"id: {id_}, Food: {self.record[id_][self.FOOD]}, Concert: {self.record[id_][self.CONCERT]}, Electronics: {self.record[id_][self.ELECS]}")
 
-    def update_record(self, id_: int, food: int, concert: int, elecs: int) -> None:
+    def update_record(self, id_, food, concert, elecs):
         self.record[id_][self.FOOD] = food
         self.record[id_][self.CONCERT] = concert
         self.record[id_][self.ELECS] = elecs
 
-    def restore_record(self) -> None:
+    def restore_record(self):
         self.execute_and_check_ret(["cp", "bookingRecord.backup", "bookingRecord"])
         self.record = copy.deepcopy(self.record_backup)
 
-    def file_exists(self, path: str) -> bool:
+    def file_exists(self, path):
         try:
             with open(path, "rb") as f:
                 pass
@@ -178,7 +178,7 @@ class Scorer:
         else:
             return True
 
-    def init_test(self) -> None:
+    def init_test(self):
         print(self.bold("Initializing for tests..."))
 
         print("Checking existence of read_server and write_server...")
@@ -212,7 +212,7 @@ class Scorer:
             exit(1)
         print(self.green("Init test done!"))
     
-    def check_state(self, client, id_: int, read_newline: bool = True, state: list[int] = None) -> bool:
+    def check_state(self, client, id_, read_newline = True, state = None):
         passed = True
         for idx in [self.FOOD, self.CONCERT, self.ELECS]:
             if state is None:
@@ -224,7 +224,7 @@ class Scorer:
             client.check_output(expected=None)
         return passed
     
-    def single_valid_read(self, port: int, id_: int) -> bool:
+    def single_valid_read(self, port, id_):
         passed = True
         with TelnetClient(host="localhost", port=port, verbose=self.verbose) as client:
             passed = client.check_output(expected=self.strs[self.ID])
@@ -237,7 +237,7 @@ class Scorer:
                 passed = client.check_EOF()
         return passed
 
-    def single_valid_write(self, port: int, id_: int, cmd: list[int], case: str = "normal") -> bool:
+    def single_valid_write(self, port, id_, cmd, case = "normal"):
         passed = True
         food, concert, elecs = 0, 0, 0
         with TelnetClient(host="localhost", port=port, verbose=self.verbose, sid=(1, 0)) as client:
@@ -266,14 +266,14 @@ class Scorer:
                 passed = client.check_EOF()
         return passed
 
-    def print_result(self, stat: list[bool]) -> None:
+    def print_result(self, stat):
         for i in range(len(stat)):
             if stat[i]:
                 print(self.green(f"Testdata {i+1}: Passed"))
             else:
                 print(self.red(f"Testdata {i+1}: Failed"))
 
-    def run_and_handle_exception(self, idx: int, task: int, f, *args, **kwargs) -> int:
+    def run_and_handle_exception(self, idx, task, f, *args, **kwargs):
         try:
             if self.verbose:
                 print(self.cyan(f"Messages between client and server in testdata {idx}:"))
@@ -294,7 +294,7 @@ class Scorer:
                 self.score[task] = 0
                 return 1
 
-    def task_1_1(self) -> None:
+    def task_1_1(self):
         print(self.bold("=====Task 1-1: Read server====="))
         task = 0
         read_port = self.find_empty_port(start=self.default_port)
@@ -309,7 +309,7 @@ class Scorer:
         else:
             self.clean()
 
-    def task_1_2(self) -> None:
+    def task_1_2(self):
         print(self.bold("=====Task 1-2: Write server====="))
         task = 1
         write_port = self.find_empty_port(start=self.default_port)
@@ -325,13 +325,13 @@ class Scorer:
         else:
             self.clean()
     
-    def task_2(self) -> None:
+    def task_2(self):
         print(self.bold("=====Task 2: Handle valid and invalid requests on 1 server, 1 simultaneous connection====="))
         task = 2
         read_port = self.find_empty_port(start=self.default_port)
         self.read_server[0] = self.start_server("read_server", read_port)
 
-        def invalid_id(port: int, id_: int, sid: tuple[int, int]) -> bool:
+        def invalid_id(port, id_, sid):
             passed = True
             with TelnetClient(host="localhost", port=port, verbose=self.verbose, sid=sid) as client:
                 passed = client.check_output(expected=self.strs[self.ID])
@@ -341,7 +341,7 @@ class Scorer:
                     passed = client.check_output(expected=self.strs[self.FAILED]) and client.check_EOF()
             return passed
 
-        def invalid_cmd(port: int, id_: int, cmd: str, sid: tuple[int, int]) -> bool:
+        def invalid_cmd(port, id_, cmd, sid):
             passed = True
             with TelnetClient(host="localhost", port=port, verbose=self.verbose, sid=sid) as client:
                 client.check_output(expected=None)
@@ -378,7 +378,7 @@ class Scorer:
         else:
             self.clean()
 
-    def task_3(self) -> None:
+    def task_3(self):
         print(self.bold("=====Task 3, Handle valid requests on 1 server, multiple simultaneous connections====="))
         task = 3
         write_port = self.find_empty_port(start=self.default_port)
@@ -410,7 +410,7 @@ class Scorer:
         else:
             self.clean()
                     
-    def task_4(self) -> None:
+    def task_4(self):
         print(self.bold("=====Task 4, Handle valid requests on multiple servers, 1 simultaneous connection on each server====="))
         task = 4
         read_port, write_port = [], []
@@ -446,17 +446,17 @@ class Scorer:
         else:
             self.clean()
 
-    def task_5_1(self) -> None:
+    def task_5_1(self):
         print(self.bold("=====Task 5-1, Client will not disconnect arbitrarily====="))
         print(self.underscore("This is not provided in sample judge!"))
         return
 
-    def task_5_2(self) -> None:
+    def task_5_2(self):
         print(self.bold("=====Task 5-2, Client may disconnect arbitrarily====="))
         print(self.underscore("This is not provided in sample judge!"))
         return
 
-    def clean(self) -> None:
+    def clean(self):
         for i in range(2):
             if self.read_server[i] is not None:
                 self.read_server[i].kill()
@@ -468,7 +468,7 @@ class Scorer:
                 self.write_server[i] = None
         self.restore_record()
 
-    def print_score(self) -> None:
+    def print_score(self):
         total = sum(self.score) - self.punishment
         if total < 0:
             total = 0
