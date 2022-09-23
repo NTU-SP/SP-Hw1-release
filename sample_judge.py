@@ -288,46 +288,52 @@ class Scorer:
         else:
             if passed:
                 print(self.green(f"Testdata {idx}: Passed"))
-                return 0
+                return 1
             else:
                 print(self.red(f"Testdata {idx}: Failed"))
                 self.score[task] = 0
-                return 1
+                return 0
 
     def task_1_1(self):
         print(self.bold("=====Task 1-1: Read server====="))
         task = 0
+        passed = []
         read_port = self.find_empty_port(start=self.default_port)
         self.read_server[0] = self.start_server("read_server", read_port)
         
         test_read_server = functools.partial(self.single_valid_read, read_port)
         
         try:
-            self.run_and_handle_exception(1, task, test_read_server, id_=902001)
+            passed.append(self.run_and_handle_exception(1, task, test_read_server, id_=902001))
         except Exception as e:
-            return
+            return False
         else:
             self.clean()
+            return False if not all(passed) else True
+
 
     def task_1_2(self):
         print(self.bold("=====Task 1-2: Write server====="))
         task = 1
+        passed = []
         write_port = self.find_empty_port(start=self.default_port)
         self.write_server[0] = self.start_server("write_server", write_port)
         
         test_write_server = functools.partial(self.single_valid_write, write_port, id_=902002)
 
         try:
-            self.run_and_handle_exception(1, task, test_write_server, cmd=[0, 0, 0])
-            self.run_and_handle_exception(2, task, test_write_server, cmd=[1, 1, -2], case="lower")
+            passed.append(self.run_and_handle_exception(1, task, test_write_server, cmd=[0, 0, 0]))
+            passed.append(self.run_and_handle_exception(2, task, test_write_server, cmd=[1, 1, -2], case="lower"))
         except Exception as e:
-            return
+            return False
         else:
             self.clean()
+            return False if not all(passed) else True
     
     def task_2(self):
         print(self.bold("=====Task 2: Handle valid and invalid requests on 1 server, 1 simultaneous connection====="))
         task = 2
+        passed = []
         read_port = self.find_empty_port(start=self.default_port)
         self.read_server[0] = self.start_server("read_server", read_port)
 
@@ -357,10 +363,10 @@ class Scorer:
         test_invalid_id = functools.partial(invalid_id, read_port, sid=(0, 0))
         
         try:
-            self.run_and_handle_exception(1, task, test_invalid_id, id_=902)
-            self.run_and_handle_exception(2, task, test_invalid_id, id_=1000000)
+            passed.append(self.run_and_handle_exception(1, task, test_invalid_id, id_=902))
+            passed.append(self.run_and_handle_exception(2, task, test_invalid_id, id_=1000000))
         except Exception as e:
-            return
+            return False
         else:
             self.clean()
 
@@ -371,16 +377,18 @@ class Scorer:
         test_invalid_cmd = functools.partial(invalid_cmd, write_port, sid=(1, 0))
 
         try:
-            self.run_and_handle_exception(3, task, test_invalid_cmd, id_=902014, cmd="1 abcde 0")
-            self.run_and_handle_exception(4, task, test_invalid_cmd, id_=902014, cmd="1 -1 2-")
+            passed.append(self.run_and_handle_exception(3, task, test_invalid_cmd, id_=902014, cmd="1 abcde 0"))
+            passed.append(self.run_and_handle_exception(4, task, test_invalid_cmd, id_=902014, cmd="1 -1 2-"))
         except Exception as e:
-            return
+            return False
         else:
             self.clean()
+            return False if not all(passed) else True
 
     def task_3(self):
         print(self.bold("=====Task 3, Handle valid requests on 1 server, multiple simultaneous connections====="))
         task = 3
+        passed = []
         write_port = self.find_empty_port(start=self.default_port)
         self.write_server[0] = self.start_server("write_server", write_port)
 
@@ -404,15 +412,17 @@ class Scorer:
        
         test_1 = functools.partial(test_3_1)
         try:
-            self.run_and_handle_exception(1, task, test_1)
+            passed.append(self.run_and_handle_exception(1, task, test_1))
         except Exception as e:
-            return
+            return False
         else:
             self.clean()
+            return False if not all(passed) else True
                     
     def task_4(self):
         print(self.bold("=====Task 4, Handle valid requests on multiple servers, 1 simultaneous connection on each server====="))
         task = 4
+        passed = []
         read_port, write_port = [], []
         write_port.append(self.find_empty_port(start=self.default_port))
         self.write_server[0] = self.start_server("write_server", port=write_port[0])
@@ -440,21 +450,22 @@ class Scorer:
         test_1 = functools.partial(test_4_1)
 
         try:
-            self.run_and_handle_exception(1, task, test_1)
+            passed.append(self.run_and_handle_exception(1, task, test_1))
         except Exception as e:
-            return
+            return False
         else:
             self.clean()
+            return False if not all(passed) else True
 
     def task_5_1(self):
         print(self.bold("=====Task 5-1, Client will not disconnect arbitrarily====="))
         print(self.underscore("This is not provided in sample judge!"))
-        return
+        return True
 
     def task_5_2(self):
         print(self.bold("=====Task 5-2, Client may disconnect arbitrarily====="))
         print(self.underscore("This is not provided in sample judge!"))
-        return
+        return True
 
     def clean(self):
         for i in range(2):
@@ -497,7 +508,9 @@ def main():
         print(scorer.bold("=====Task 5, Handle valid requests on multiple servers, multiple simultaneous connection====="))
         scorer.task_5_1()
         scorer.task_5_2()
+        scorer.print_score()
     else:
+        passed = []
         tasks = {
             "1_1": scorer.task_1_1, "1_2": scorer.task_1_2, "2": scorer.task_2, "3": scorer.task_3,
             "4": scorer.task_4, "5_1": scorer.task_5_1, "5_2": scorer.task_5_2
@@ -508,10 +521,12 @@ def main():
             exit(0)
         for key in tasks:
             if key in args.task:
-                tasks[key]()
+                passed.append(tasks[key]())
             else:
                 scorer.score[index[key]] = 0
-    scorer.print_score()
+        scorer.print_score()
+        if not all(passed):
+            exit(1)
 
 if __name__ == '__main__':
     main()
