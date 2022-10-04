@@ -426,13 +426,13 @@ class Scorer:
         read_port, write_port = [], []
         write_port.append(self.find_empty_port(start=self.default_port))
         self.write_server[0] = self.start_server("write_server", port=write_port[0])
-        write_port.append(self.find_empty_port(start=self.default_port))
+        write_port.append(self.find_empty_port(start=write_port[0]+1))
         self.write_server[1] = self.start_server("write_server", port=write_port[1])
 
         def test_4_1():
             passed = True
-            with TelnetClient(host="localhost", port=write_port[0], verbose=self.verbose, timeout=0.2, sid=(1, 0), cid=2) as wr_client1, \
-                 TelnetClient(host="localhost", port=write_port[1], verbose=self.verbose, timeout=0.2, sid=(1, 1), cid=3) as wr_client2:
+            with TelnetClient(host="localhost", port=write_port[0], verbose=self.verbose, timeout=0.2, sid=(1, 0), cid=0) as wr_client1, \
+                 TelnetClient(host="localhost", port=write_port[1], verbose=self.verbose, timeout=0.2, sid=(1, 1), cid=1) as wr_client2:
                 passed = wr_client1.check_output(expected=self.strs[self.ID]) and wr_client2.check_output(expected=self.strs[self.ID])
                 if passed:
                     wr_client2.write(b"902001\r\n")
