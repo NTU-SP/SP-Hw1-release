@@ -55,7 +55,7 @@ static void free_request(request* reqP);
 
 typedef struct {
     int id;          // 902001-902020
-    int bookingState[OBJ_NUM]; // 1 means booked, 0 means not.
+    int bookingState[OBJ_NUM]; // array of booking number of each object (0 or positive numbers)
 }record;
 
 int handle_read(request* reqP) {
