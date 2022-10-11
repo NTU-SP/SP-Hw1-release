@@ -23,7 +23,12 @@ class TelnetClient(telnetlib.Telnet):
             print(f"Client {self.client_idx} connects to {self.server_type.lower()} {self.server_idx}")
 
     def check_output(self, expected):
-        msg = self.read_until(b"\n", timeout=0.2).decode().strip("\n")
+        msg = self.read_until(b"\n", timeout=0.2).decode()
+        if msg[-1] != "\n":
+            if self.verbose:
+                print(f"\33[31m{self.server_type} {self.server_idx} respond to client {self.client_idx}: Timeout\33[0m")
+            return False
+        msg = msg.strip("\n")
         if self.verbose:
             if msg == expected:
                 print(f"{self.server_type} {self.server_idx} send to client {self.client_idx}: " + msg)
